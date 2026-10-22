@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cleanup:
-    if: vars.AZURE_DEPLOY_ENABLED == 'true'
+    if: vars.DEMO_CLEANUP_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: azure
     timeout-minutes: 5
@@ -23,5 +23,5 @@ jobs:
       - run: npm ci --omit=dev
       - run: npm run db:cleanup
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_URI: ${{ secrets.DEMO_CLEANUP_MONGODB_URI }}
           MONGODB_DATABASE: portfolio-demos

@@ -54,7 +54,7 @@ Required indexes: unique `_id` (default), and `{kind:1, expiresAt:1}` for alloca
 
 `.github/workflows/azure.yml` runs tests, dependency auditing and packaging on pushes/PRs. Deployment is disabled unless repository variable `AZURE_DEPLOY_ENABLED` is `true`; the deploy job uses protected environment `azure` and its `AZURE_STATIC_WEB_APPS_API_TOKEN` secret. The Linux runner installs production dependencies, including the correct native Sharp image library, before uploading. No local `.env`, database, PHP storage or historical credentials enter the release.
 
-`.github/workflows/cleanup.yml` runs hourly at minute 29 and manually, with the same gate/environment. Its `MONGODB_URI` environment secret is the app-scoped connection only. It clears expired payloads without changing the collection, indexes or capacity. Administrators can run `npm run db:cleanup` explicitly; it reports only the number of cleared workspaces.
+`.github/workflows/cleanup.yml` runs hourly at minute 29 and manually, with the `DEMO_CLEANUP_ENABLED` gate and the same protected environment. Its `DEMO_CLEANUP_MONGODB_URI` environment secret is a cleanup-scoped connection mapped to `MONGODB_URI`. It clears expired payloads without changing the collection, indexes or capacity. Administrators can run `npm run db:cleanup` explicitly; it reports only the number of cleared workspaces.
 
 `npm run package:azure` creates `release/site` and `release/api`. The adapter preserves multipart image bytes, separate query parameters, multiple cookies and binary image responses. `/api/health` verifies that the database is reachable and prepared; it exposes no connection details. Optional `DEMO_MAINTENANCE=true` blocks the application during maintenance.
 
