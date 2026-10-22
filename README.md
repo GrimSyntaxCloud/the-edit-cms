@@ -1,6 +1,6 @@
 # The Edit — an editorial CMS
 
-A fictional independent publication with a working editorial desk: write and revise stories, manage custom pages and staff roles, attach images, import/export CSV and read JSON feeds. The slate, paper and red design turns restored PHP coursework into a contemporary publishing workspace.
+A fictional independent publication with a working editorial desk: write and revise stories, manage custom pages and staff roles, attach images, import/export CSV and read JSON feeds. The cobalt, white and ink design turns restored PHP coursework into a contemporary newsroom: a large newspaper masthead, a lead story with an issue rail, and an editorial workspace with persistent tool navigation.
 
 This repository contains two real backend editions:
 
@@ -12,6 +12,12 @@ This repository contains two real backend editions:
 Browse fictional sample stories, search headlines/bylines, sort by publication date and view story details. Start an editorial workspace with a fictional username and password to create/edit stories, pages and staff profiles. Administrators manage editor/admin roles; editors can publish content but cannot manage people. JPEG/PNG uploads work on stories, pages and profiles. CSV imports validate the complete batch before saving; exports escape formula-like values. A latest-stories widget and read-only JSON endpoints remain available.
 
 There is no destructive delete workflow because the source coursework only had create/read/update screens. Sample stories are read-only; use **Copy to workspace** to edit your own version. Uploaded text is plain text, not executable rich HTML.
+
+## Visual design
+
+The publication and private desk share a distinct newsroom identity: cobalt blue, white, ink and warm orange annotations. The front page has a large typographic masthead, an original folded-newspaper SVG, a featured story and a numbered issue rail. The CMS uses a dark tool rail, focused writing forms and mobile record cards that keep edit actions visible. All routes, inputs, role controls, imports, exports and image flows remain intact.
+
+The design uses system typography and original local CSS/SVG only, with no new dependencies, paid assets or external font requests. The short introductory motion honors reduced-motion preferences. The preserved PHP edition retains its previous styling.
 
 ## Local development
 
