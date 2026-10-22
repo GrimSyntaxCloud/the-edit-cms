@@ -4,7 +4,6 @@ const assert = require("node:assert/strict");
 const sharp = require("sharp");
 const { connect } = require("../lib/repository");
 const { RETENTION_MS } = require("../lib/domain");
-const { signer } = require("../lib/security");
 const base =
   process.env.DEMO_URL ||
   "https://salmon-pebble-0af10980f.2.azurestaticapps.net";
@@ -77,8 +76,8 @@ function binding(browser) {
       assert.equal(response.status, 303, response.text);
       assert.ok(actor.jar.edit_auth);
       created.push(binding(actor));
-      assert.match(response.headers.getSetCookie().join(";"), /HttpOnly/);
-      assert.match(response.headers.getSetCookie().join(";"), /Secure/);
+      assert.match(response.headers.getSetCookie().join(";"), /HttpOnly/i);
+      assert.match(response.headers.getSetCookie().join(";"), /Secure/i);
     }
     results.push("isolated workspace signup");
     const desk = await a.request("/?page=desk");
@@ -296,6 +295,29 @@ function binding(browser) {
     console.error("Live verification failed:", error.message);
     process.exitCode = 1;
   } finally {
+    if (process.env.MONGODB_URI && created.length) {
+      try {
+        const connected = await connect();
+        client = connected.client;
+        const collection = connected.db.collection("edit_demo");
+        for (const item of created)
+          await collection.updateOne(
+            {
+              _id: item.slot,
+              generation: item.generation,
+              kind: "workspace",
+              isSeed: false,
+            },
+            { $set: { expiresAt: new Date(Date.now() - 1000) } },
+          );
+        await connected.repository.cleanup(new Date());
+      } catch {
+        console.error(
+          "Test workspace cleanup could not finish; normal 96-hour expiry still applies.",
+        );
+        process.exitCode = 1;
+      }
+    }
     await client?.close();
   }
 })();
