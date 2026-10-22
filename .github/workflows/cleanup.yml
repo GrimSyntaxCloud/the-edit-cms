@@ -1,0 +1,27 @@
+name: Clear expired demo workspaces
+on:
+  schedule:
+    - cron: "29 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: the-edit-cleanup
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    if: vars.AZURE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: azure
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --omit=dev
+      - run: npm run db:cleanup
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          MONGODB_DATABASE: portfolio-demos

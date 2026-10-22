@@ -1,0 +1,48 @@
+name: Test and deploy The Edit
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: the-edit-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm audit --omit=dev --audit-level=low
+      - run: npm run package:azure
+  deploy:
+    if: github.event_name != 'pull_request' && vars.AZURE_DEPLOY_ENABLED == 'true'
+    needs: validate
+    environment: azure
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm run package:azure
+      - run: npm ci --omit=dev
+        working-directory: release/api
+      - uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: upload
+          app_location: release/site
+          api_location: release/api
+          output_location: ""
+          skip_app_build: true
+          skip_api_build: true

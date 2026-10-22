@@ -1,0 +1,8 @@
+node_modules/
+release/
+.env*
+!.env.example
+*.sqlite*
+php-edition/storage/*
+!php-edition/storage/.gitkeep
+.DS_Store
