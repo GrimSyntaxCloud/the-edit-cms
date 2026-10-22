@@ -550,3 +550,33 @@ test("expensive password work is bounded to two concurrent operations", async ()
   );
   await Promise.all(pending);
 });
+test("password changes during sign-in cannot issue a session for the old credential", async () => {
+  const f = fixture();
+  const a = await start(f);
+  await a.agent.post("/").type("form").send({ action: "logout", csrf: a.csrf });
+  const original = f.repository.mutate.bind(f.repository);
+  let changeOnce = true;
+  f.repository.mutate = async (binding, now, fn) => {
+    if (changeOnce) {
+      changeOnce = false;
+      f.repository.docs.get(binding.slot).users[0].passwordHash =
+        "changed-concurrently";
+    }
+    return original(binding, now, fn);
+  };
+  assert.equal(
+    (
+      await a.agent
+        .post("/")
+        .type("form")
+        .send({
+          action: "login",
+          csrf: a.csrf,
+          name: "editor",
+          password: "fictional-password-123",
+        })
+    ).status,
+    401,
+  );
+  assert.equal((await a.agent.get("/?page=desk")).status, 303);
+});

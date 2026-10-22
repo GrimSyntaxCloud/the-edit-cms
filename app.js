@@ -183,9 +183,18 @@ function createApp({
     if (user.role !== "admin")
       throw new Problem("Administrator access required.", 403);
   }
-  async function signInSession(binding, userId, req, res) {
+  async function signInSession(
+    binding,
+    userId,
+    req,
+    res,
+    expectedPasswordHash,
+  ) {
     const raw = token();
     const result = await repository.mutate(binding, req.clock, (doc) => {
+      const current = doc.users.find((user) => user.id === userId);
+      if (!current || current.passwordHash !== expectedPasswordHash)
+        throw new Problem("Your credentials changed. Sign in again.", 401);
       doc.sessions = doc.sessions
         .filter((s) => +new Date(s.expiresAt) > +req.clock)
         .slice(-9);
@@ -240,7 +249,13 @@ function createApp({
             role: "admin",
           };
           const doc = await repository.claim(user, req.clock);
-          await signInSession(bindingOf(doc), user.id, req, res);
+          await signInSession(
+            bindingOf(doc),
+            user.id,
+            req,
+            res,
+            user.passwordHash,
+          );
           return res.redirect(303, "/?page=desk");
         }
         if (action === "login") {
@@ -259,7 +274,13 @@ function createApp({
             !(await verifyPassword(req.body.password, user.passwordHash))
           )
             throw new Problem("Username or password not recognized.", 401);
-          await signInSession(req.binding, user.id, req, res);
+          await signInSession(
+            req.binding,
+            user.id,
+            req,
+            res,
+            user.passwordHash,
+          );
           return res.redirect(303, "/?page=desk");
         }
         if (!req.user)
