@@ -1,6 +1,7 @@
 // Explicit release verification against the owner-authorized demo only.
 // Creates fictional test workspaces; with a scoped URI it expires only those generations.
 const assert = require("node:assert/strict");
+require("node:dns").setDefaultResultOrder("ipv4first");
 const sharp = require("sharp");
 const { connect } = require("../lib/repository");
 const { RETENTION_MS } = require("../lib/domain");
@@ -10,6 +11,10 @@ const base =
 const password = "fictional-live-verification-123";
 const created = [];
 const results = [];
+function mark(step) {
+  results.push(step);
+  console.error("Verified: " + step);
+}
 function browser() {
   const jar = {};
   return {
@@ -24,6 +29,7 @@ function browser() {
       );
       const response = await fetch(base + path, {
         ...options,
+        signal: AbortSignal.timeout(30000),
         headers,
         redirect: "manual",
       });
@@ -61,7 +67,7 @@ function binding(browser) {
     let response = await a.request("/api/health");
     assert.equal(response.status, 200);
     assert.equal(JSON.parse(response.text).database, "connected");
-    results.push("health/database");
+    mark("health/database");
     for (const [i, actor] of [a, b].entries()) {
       const page = await actor.request("/?page=start");
       assert.equal(page.status, 200);
@@ -79,7 +85,7 @@ function binding(browser) {
       assert.match(response.headers.getSetCookie().join(";"), /HttpOnly/i);
       assert.match(response.headers.getSetCookie().join(";"), /Secure/i);
     }
-    results.push("isolated workspace signup");
+    mark("isolated workspace signup");
     const desk = await a.request("/?page=desk");
     assert.equal(desk.status, 200);
     const expiry = desk.text.match(/<time[^>]*>([^<]+)<\/time>/)?.[1];
@@ -100,7 +106,7 @@ function binding(browser) {
     assert.ok(
       !(await b.request("/api.php?type=articles")).text.includes(title),
     );
-    results.push("story persistence and cross-workspace isolation");
+    mark("story persistence and cross-workspace isolation");
     const form = new FormData();
     for (const [key, value] of Object.entries({
       action: "article",
@@ -127,6 +133,7 @@ function binding(browser) {
     const imageResponse = await fetch(
       base + "/image.php?id=" + imageStory.image,
       {
+        signal: AbortSignal.timeout(30000),
         headers: {
           Cookie: Object.entries(a.jar)
             .map(([key, value]) => key + "=" + value)
@@ -144,7 +151,7 @@ function binding(browser) {
       (await b.request("/image.php?id=" + imageStory.image)).status,
       404,
     );
-    results.push("private real image upload/download");
+    mark("private real image upload/download");
     const csv = new FormData();
     csv.set("csrf", a.csrf);
     csv.set("action", "import");
@@ -163,7 +170,7 @@ function binding(browser) {
     response = await a.request("/", { method: "POST", body: csv });
     assert.equal(response.status, 303, response.text);
     assert.match((await a.request("/export.php")).text, /"'=1\+1"/);
-    results.push("CSV import/export");
+    mark("CSV import/export");
     response = await a.form({
       action: "page",
       csrf: a.csrf,
@@ -182,7 +189,7 @@ function binding(browser) {
       (await b.request("/?page=content&slug=release-page")).status,
       404,
     );
-    results.push("custom pages and ownership");
+    mark("custom pages and ownership");
     const people = await a.request("/api.php?type=users");
     assert.equal(people.status, 200);
     assert.doesNotMatch(people.text, /passwordHash|scrypt|sessions/);
@@ -225,14 +232,12 @@ function binding(browser) {
     );
     assert.equal((await a.request(articlePath)).status, 200);
     assert.ok((await a.request("/?page=desk")).text.includes(expiry));
-    results.push(
-      "roles, logout/login, retained content and unchanged deadline",
-    );
+    mark("roles, logout/login, retained content and unchanged deadline");
     const replay = browser();
     replay.jar.edit_auth = priorAuth;
     replay.jar.edit_workspace = a.jar.edit_workspace;
     assert.equal((await replay.request("/?page=desk")).status, 303);
-    results.push("revoked session replay denied");
+    mark("revoked session replay denied");
     if (process.env.MONGODB_URI) {
       const connected = await connect();
       client = connected.client;
@@ -274,7 +279,7 @@ function binding(browser) {
         before,
       );
       assert.equal(await collection.countDocuments({}), 101);
-      results.push(
+      mark(
         "real Cosmos fixed96h/expiry/cleanup; permanent seed and101documents preserved",
       );
     }
