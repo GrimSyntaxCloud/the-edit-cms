@@ -1572,3 +1572,15 @@ footer small {
     transition: none !important;
   }
 }
+
+/* Vector arrows keep their shape across Safari, system fonts, and emoji sets. */
+svg.compat-arrow {
+  display: inline-block;
+  position: static;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+  fill: none;
+  stroke: currentColor;
+}
